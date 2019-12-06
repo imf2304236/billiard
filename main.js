@@ -15,6 +15,13 @@ const camera =
 camera.position.z = 100;
 camera.lookAt(scene.position);
 
+// Add lighting
+const ambientLight = new THREE.AmbientLight(0x909090);
+scene.add(ambientLight);
+const light = new THREE.DirectionalLight(0x444444);
+light.position.set(0, 100, 0);
+scene.add(light);
+
 // TODO: Create table of realistic proportions
 // TODO: Add cushions
 // TODO: Add legs
