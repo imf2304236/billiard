@@ -1,3 +1,3 @@
-A realisitic billiard simulation
+A realistic billiard simulation
 
 <!-- Check out the simulation @ https://imf2304236.github.io/billiard/ ! -->
