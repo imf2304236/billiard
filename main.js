@@ -1,39 +1,90 @@
 'use strict';
 
+const UNITS_PER_MM = 0.1;
+
 // Initialize webGL Renderer
 const canvas = document.getElementById('mycanvas');
 const renderer = new THREE.WebGLRenderer({canvas: canvas});
 renderer.setClearColor('rgb(255, 255, 255)');
 
-// Create scene & camera
+// Create scene
 const scene = new THREE.Scene();
 scene.add(new THREE.AxesHelper());
 
+// Create table
+const tableLength = 2700 * UNITS_PER_MM;
+const tableWidth = tableLength / 2;
+const tableHeight = 775 * UNITS_PER_MM;
+const tableColor = 'darkgreen';
+const tableGeometry = new THREE.PlaneBufferGeometry(tableWidth, tableLength);
+const tableMaterial =
+    new THREE.MeshPhongMaterial({
+      color: tableColor,
+      side: THREE.DoubleSide,
+    });
+const table = new THREE.Mesh(tableGeometry, tableMaterial);
+table.rotateX(-Math.PI / 2);
+table.position.y = tableHeight;
+scene.add(table);
+
+// Create sideCushions
+const sideCushionWidth = tableWidth / 20;
+const sideCushionHeight = sideCushionWidth;
+const sideCushionLength = tableLength + sideCushionWidth * 2;
+const cushionColor = tableColor;
+const sideCushionGeometry =
+    new THREE.BoxBufferGeometry(
+        sideCushionWidth, sideCushionHeight, sideCushionLength);
+const sideCushionMaterial = new THREE.MeshPhongMaterial({color: cushionColor});
+const sideCushions = [
+  new THREE.Mesh(sideCushionGeometry, sideCushionMaterial),
+  new THREE.Mesh(sideCushionGeometry, sideCushionMaterial),
+];
+sideCushions[0].position.x = -(tableWidth / 2 + sideCushionWidth / 2);
+sideCushions[1].position.x = tableWidth / 2 + sideCushionWidth / 2;
+sideCushions[0].position.y = tableHeight + sideCushionHeight / 2;
+sideCushions[1].position.y = tableHeight + sideCushionHeight / 2;
+scene.add(sideCushions[0]);
+scene.add(sideCushions[1]);
+
+const backCushionGeometry =
+    new THREE.BoxBufferGeometry(
+        tableWidth + 2 * sideCushionWidth, sideCushionHeight, sideCushionWidth);
+const backCushionMaterial = new THREE.MeshPhongMaterial({color: cushionColor});
+const backCushions = [
+  new THREE.Mesh(backCushionGeometry, backCushionMaterial),
+  new THREE.Mesh(backCushionGeometry, backCushionMaterial),
+];
+backCushions[0].position.y = sideCushions[0].position.y;
+backCushions[1].position.y = sideCushions[0].position.y;
+backCushions[0].position.z = -tableLength / 2 - sideCushionWidth / 2;
+backCushions[1].position.z = tableLength / 2 + sideCushionWidth / 2;
+scene.add(backCushions[0]);
+scene.add(backCushions[1]);
+
+
+// Add camera
+const cameraFov = 45;
+const cameraAspect = canvas.width / canvas.height;
+const cameraNear = UNITS_PER_MM;
+const cameraFar = 10000 * UNITS_PER_MM;
+const cameraInitialPosition = [0, tableHeight * 2, tableLength];
 const camera =
     new THREE.PerspectiveCamera(
-        45, canvas.width / canvas.height, 0.1, 1000);
-camera.position.set(0, 45, 100);
+        cameraFov, cameraAspect, cameraNear, cameraFar);
+camera.position.set(...cameraInitialPosition);
 camera.lookAt(scene.position);
 
 // Add lighting
-const ambientLight = new THREE.AmbientLight(0x909090);
+const ambientLightColor = 0x606060;
+const ambientLight = new THREE.AmbientLight(ambientLightColor);
 scene.add(ambientLight);
-const light = new THREE.DirectionalLight(0x444444);
-light.position.set(0, 100, 0);
-scene.add(light);
 
-// Create table of realistic proportions
-const tableWidth = 45;
-const tableHeight = 90;
-const tableColor = 'green';
-const tableGeometry = new THREE.PlaneBufferGeometry(tableWidth, tableHeight);
-const tableMaterial =
-    new THREE.MeshPhongMaterial({color: tableColor, side: THREE.DoubleSide});
-const table = new THREE.Mesh(tableGeometry, tableMaterial);
-table.rotateX(Math.PI / 2);
-scene.add(table);
+const directionalLightColor = 'rgb(255, 147, 41)';
+const directionalLight = new THREE.DirectionalLight(directionalLightColor);
+directionalLight.position.set(0, tableHeight * 2, 0);
+scene.add(directionalLight);
 
-// TODO: Add cushions
 // TODO: Add legs
 // TODO: Place table on ground
 // TODO: Add 8 billiard balls as wireframe models of realistic size
