@@ -12,7 +12,7 @@ scene.add(new THREE.AxesHelper());
 const camera =
     new THREE.PerspectiveCamera(
         45, canvas.width / canvas.height, 0.1, 1000);
-camera.position.z = 100;
+camera.position.set(0, 45, 100);
 camera.lookAt(scene.position);
 
 // Add lighting
@@ -22,7 +22,17 @@ const light = new THREE.DirectionalLight(0x444444);
 light.position.set(0, 100, 0);
 scene.add(light);
 
-// TODO: Create table of realistic proportions
+// Create table of realistic proportions
+const tableWidth = 45;
+const tableHeight = 90;
+const tableColor = 'green';
+const tableGeometry = new THREE.PlaneBufferGeometry(tableWidth, tableHeight);
+const tableMaterial =
+    new THREE.MeshPhongMaterial({color: tableColor, side: THREE.DoubleSide});
+const table = new THREE.Mesh(tableGeometry, tableMaterial);
+table.rotateX(Math.PI / 2);
+scene.add(table);
+
 // TODO: Add cushions
 // TODO: Add legs
 // TODO: Place table on ground
