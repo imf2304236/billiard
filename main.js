@@ -34,3 +34,17 @@ camera.lookAt(scene.position);
 // TODO: Add cord
 // TODO: Add shadow to table
 // TODO: Add shadows to balls
+
+const controls = new THREE.TrackballControls(camera, canvas);
+
+/**
+ * Renders frame
+ */
+function render() {
+  requestAnimationFrame(render);
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+render();
