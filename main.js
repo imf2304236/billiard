@@ -103,6 +103,24 @@ ground.rotateX(-Math.PI / 2);
 ground.position.y = groundYOffset;
 scene.add(ground);
 
+// Add billiard balls
+const balls = [];
+const ballRadius = 57.15 * UNITS_PER_MM / 2;
+const ballColor = 'blue';
+const ballGeometryWidthSegments = 8;
+const ballGeometryHeightSegments = 8;
+const ballGeometry =
+    new THREE.SphereGeometry(
+        ballRadius, ballGeometryWidthSegments, ballGeometryHeightSegments);
+const ballMaterial =
+    new THREE.MeshPhongMaterial({color: ballColor, wireframe: true});
+for (let i = 0; i < 4; ++i) {
+  const ball = new THREE.Mesh(ballGeometry, ballMaterial);
+  balls.push[ball];
+  ball.position.y = table.position.y + ballRadius;
+  scene.add(ball);
+}
+
 // Add camera
 const cameraFov = 45;
 const cameraAspect = canvas.width / canvas.height;
@@ -115,17 +133,17 @@ const camera =
 camera.position.set(...cameraInitialPosition);
 camera.lookAt(scene.position);
 
-// Add lighting
+// Add ambient light
 const ambientLightColor = 0x606060;
 const ambientLight = new THREE.AmbientLight(ambientLightColor);
 scene.add(ambientLight);
 
+// Add directional light
 const directionalLightColor = 'white';
 const directionalLight = new THREE.DirectionalLight(directionalLightColor);
 directionalLight.position.set(0, tableHeight * 2, 0);
 scene.add(directionalLight);
 
-// TODO: Add 8 billiard balls as wireframe models of realistic size
 // TODO: Place balls at random, non-overlapping positions on the table
 // TODO: Move each balls according to its own random velocity vector
 // TODO: Reduce velocity of each ball by 20% per second due to friction
