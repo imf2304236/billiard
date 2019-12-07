@@ -27,8 +27,8 @@ table.rotateX(-Math.PI / 2);
 table.position.y = tableHeight;
 scene.add(table);
 
-// Create sideCushions
-const sideCushionWidth = tableWidth / 20;
+// Create cushions
+const sideCushionWidth = tableWidth / 15;
 const sideCushionHeight = sideCushionWidth;
 const sideCushionLength = tableLength + sideCushionWidth * 2;
 const cushionColor = tableColor;
@@ -47,9 +47,12 @@ sideCushions[1].position.y = tableHeight + sideCushionHeight / 2;
 scene.add(sideCushions[0]);
 scene.add(sideCushions[1]);
 
+const backCushionWidth = tableWidth + 2 * sideCushionWidth;
+const backCushionHeight = sideCushionHeight;
+const backCushionDepth = sideCushionWidth;
 const backCushionGeometry =
     new THREE.BoxBufferGeometry(
-        tableWidth + 2 * sideCushionWidth, sideCushionHeight, sideCushionWidth);
+        backCushionWidth, backCushionHeight, backCushionDepth);
 const backCushionMaterial = new THREE.MeshPhongMaterial({color: cushionColor});
 const backCushions = [
   new THREE.Mesh(backCushionGeometry, backCushionMaterial),
@@ -62,6 +65,29 @@ backCushions[1].position.z = tableLength / 2 + sideCushionWidth / 2;
 scene.add(backCushions[0]);
 scene.add(backCushions[1]);
 
+// Add legs
+const legColor = 'saddlebrown';
+const legWidth = sideCushionWidth * 1.5;
+const legHeight = tableHeight;
+const legDepth = legWidth;
+const legGeometry = new THREE.BoxBufferGeometry(legWidth, legHeight, legDepth);
+const legMaterial = new THREE.MeshPhongMaterial({color: legColor});
+const legs = [];
+const legYOffset = -0.5 * UNITS_PER_MM;
+for (let i = 0; i < 4; ++i) {
+  const leg = new THREE.Mesh(legGeometry, legMaterial);
+  legs.push(leg);
+  leg.position.y = legHeight / 2 + legYOffset;
+  scene.add(leg);
+}
+legs[0].position.x = -(tableWidth - sideCushionWidth) / 2;
+legs[1].position.x = -(tableWidth - sideCushionWidth) / 2;
+legs[2].position.x = (tableWidth - sideCushionWidth) / 2;
+legs[3].position.x = (tableWidth - sideCushionWidth) / 2;
+legs[0].position.z = -(tableLength - sideCushionWidth) / 2;
+legs[1].position.z = (tableLength - sideCushionWidth) / 2;
+legs[2].position.z = -(tableLength - sideCushionWidth) / 2;
+legs[3].position.z = (tableLength - sideCushionWidth) / 2;
 
 // Add camera
 const cameraFov = 45;
@@ -85,7 +111,6 @@ const directionalLight = new THREE.DirectionalLight(directionalLightColor);
 directionalLight.position.set(0, tableHeight * 2, 0);
 scene.add(directionalLight);
 
-// TODO: Add legs
 // TODO: Place table on ground
 // TODO: Add 8 billiard balls as wireframe models of realistic size
 // TODO: Place balls at random, non-overlapping positions on the table
