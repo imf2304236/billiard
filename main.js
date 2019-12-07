@@ -1,6 +1,7 @@
 'use strict';
 
 const UNITS_PER_MM = 0.1;
+const UNITS_PER_M = 1000 * UNITS_PER_MM;
 
 // Initialize webGL Renderer
 const canvas = document.getElementById('mycanvas');
@@ -89,6 +90,19 @@ legs[1].position.z = (tableLength - sideCushionWidth) / 2;
 legs[2].position.z = -(tableLength - sideCushionWidth) / 2;
 legs[3].position.z = (tableLength - sideCushionWidth) / 2;
 
+// Add ground
+const groundWidth = 10 * UNITS_PER_M;
+const groundHeight = 10 * UNITS_PER_M;
+const groundColor = 'grey';
+const groundYOffset = -1.5 * UNITS_PER_MM;
+const groundGeometry = new THREE.PlaneBufferGeometry(groundWidth, groundHeight);
+const groundMaterial =
+    new THREE.MeshPhongMaterial({color: groundColor, side: THREE.DoubleSide});
+const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+ground.rotateX(-Math.PI / 2);
+ground.position.y = groundYOffset;
+scene.add(ground);
+
 // Add camera
 const cameraFov = 45;
 const cameraAspect = canvas.width / canvas.height;
@@ -106,12 +120,11 @@ const ambientLightColor = 0x606060;
 const ambientLight = new THREE.AmbientLight(ambientLightColor);
 scene.add(ambientLight);
 
-const directionalLightColor = 'rgb(255, 147, 41)';
+const directionalLightColor = 'white';
 const directionalLight = new THREE.DirectionalLight(directionalLightColor);
 directionalLight.position.set(0, tableHeight * 2, 0);
 scene.add(directionalLight);
 
-// TODO: Place table on ground
 // TODO: Add 8 billiard balls as wireframe models of realistic size
 // TODO: Place balls at random, non-overlapping positions on the table
 // TODO: Move each balls according to its own random velocity vector
