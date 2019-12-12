@@ -182,8 +182,13 @@ for (let i = 0; i < numberOfBalls; ++i) {
   } while (ballsAreOverlapping);
 
   // Assign a random velocity vector to each ball
+  const velocityScalar = UNITS_PER_M / 10;
   newBall.velocity =
-      new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5);
+      new THREE.Vector3(
+          velocityScalar * (Math.random() - 0.5),
+          0,
+          velocityScalar * (Math.random() - 0.5),
+      );
 
   balls.push(newBall);
   scene.add(newBall);
@@ -212,7 +217,6 @@ const directionalLight = new THREE.DirectionalLight(directionalLightColor);
 directionalLight.position.set(0, tableHeight * 2, 0);
 scene.add(directionalLight);
 
-// TODO: Reduce velocity of each ball by 20% per second due to friction
 // TODO: Make sure the balls are rolling without slip and not just sliding
 // TODO: Reduce the velocity of each ball by 20% at each reflection
 // TODO: Add the texture images to the balls
@@ -227,11 +231,15 @@ scene.add(directionalLight);
 
 const controls = new THREE.TrackballControls(camera, canvas);
 
+const clock = new THREE.Clock();
+let deltaTime = 0;
+
 /**
  * Renders frame
  */
 function render() {
   requestAnimationFrame(render);
+  deltaTime = clock.getDelta();
 
   for (const ball of balls) {
     // Specular reflection
@@ -247,6 +255,9 @@ function render() {
     if (ball.position.z - ballRadius < -tableLength / 2) {
       ball.velocity.z = Math.abs(ball.velocity.z);
     }
+
+    // Reduce velocity of each ball by 20% per second due to friction
+    ball.velocity.sub(ball.velocity.clone().multiplyScalar(0.2 * deltaTime));
 
     // Move each ball according to its velocity vector
     ball.position.add(ball.velocity);
