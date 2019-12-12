@@ -5,10 +5,11 @@ const UNITS_PER_M = 1000 * UNITS_PER_MM;
 
 /**
  * Checks if a number is within an interval range
- * @param {Number} number 
- * @param {Number} lowerBound 
- * @param {Number} upperBound 
- * @return {Boolean} `true` if `number` is within the interval, otherwise `false`
+ * @param {Number} number
+ * @param {Number} lowerBound
+ * @param {Number} upperBound
+ * @return {Boolean} `true` if `number` is within the interval,
+ * otherwise `false`
  */
 function inRange(number, lowerBound, upperBound) {
   return lowerBound < number && number < upperBound;
@@ -180,6 +181,10 @@ for (let i = 0; i < numberOfBalls; ++i) {
     }
   } while (ballsAreOverlapping);
 
+  // Assign a random velocity vector to each ball
+  newBall.velocity =
+      new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5);
+
   balls.push(newBall);
   scene.add(newBall);
 }
@@ -207,7 +212,6 @@ const directionalLight = new THREE.DirectionalLight(directionalLightColor);
 directionalLight.position.set(0, tableHeight * 2, 0);
 scene.add(directionalLight);
 
-// TODO: Move each balls according to its own random velocity vector
 // TODO: Reduce velocity of each ball by 20% per second due to friction
 // TODO: Make sure the balls are rolling without slip and not just sliding
 // TODO: Reduce the velocity of each ball by 20% at each reflection
@@ -228,6 +232,25 @@ const controls = new THREE.TrackballControls(camera, canvas);
  */
 function render() {
   requestAnimationFrame(render);
+
+  for (const ball of balls) {
+    // Specular reflection
+    if (ball.position.x + ballRadius > tableWidth / 2) {
+      ball.velocity.x = -Math.abs(ball.velocity.x);
+    }
+    if (ball.position.x - ballRadius < -tableWidth / 2) {
+      ball.velocity.x = Math.abs(ball.velocity.x);
+    }
+    if (ball.position.z + ballRadius > tableLength / 2) {
+      ball.velocity.z = -Math.abs(ball.velocity.z);
+    }
+    if (ball.position.z - ballRadius < -tableLength / 2) {
+      ball.velocity.z = Math.abs(ball.velocity.z);
+    }
+
+    // Move each ball according to its velocity vector
+    ball.position.add(ball.velocity);
+  }
 
   controls.update();
   renderer.render(scene, camera);
