@@ -3,6 +3,52 @@
 const UNITS_PER_MM = 0.1;
 const UNITS_PER_M = 1000 * UNITS_PER_MM;
 
+/**
+ * Checks if a number is within an interval range
+ * @param {Number} number 
+ * @param {Number} lowerBound 
+ * @param {Number} upperBound 
+ * @return {Boolean} `true` if `number` is within the interval, otherwise `false`
+ */
+function inRange(number, lowerBound, upperBound) {
+  return lowerBound < number && number < upperBound;
+}
+
+/**
+ * Checks if two balls are overlapping
+ * @param {THREE.Object3D} ball1
+ * @param {THREE.Object3D} ball2
+ * @param {Number} ballRadius
+ * @return {Boolean} `true` if balls are overlapping, otherwise `false`
+ */
+function areBallsOverlapping(ball1, ball2, ballRadius) {
+  let result = false;
+
+  const ball1LowerBoundX = ball1.position.x - ballRadius;
+  const ball1UpperBoundX = ball1.position.x + ballRadius;
+  const ball1LowerBoundZ = ball1.position.z - ballRadius;
+  const ball1UpperBoundZ = ball1.position.z + ballRadius;
+
+  const ball2LowerBoundX = ball2.position.x - ballRadius;
+  const ball2UpperBoundX = ball2.position.x + ballRadius;
+  const ball2LowerBoundZ = ball2.position.z - ballRadius;
+  const ball2UpperBoundZ = ball2.position.z + ballRadius;
+
+  if (
+    (
+      inRange(ball1LowerBoundX, ball2LowerBoundX, ball2UpperBoundX) ||
+          inRange(ball1UpperBoundX, ball2LowerBoundX, ball2UpperBoundX)
+    ) && (
+      inRange(ball1LowerBoundZ, ball2LowerBoundZ, ball2UpperBoundZ) ||
+          inRange(ball1UpperBoundZ, ball2LowerBoundZ, ball2UpperBoundZ)
+    )
+  ) {
+    result = true;
+  }
+
+  return result;
+}
+
 // Initialize webGL Renderer
 const canvas = document.getElementById('mycanvas');
 const renderer = new THREE.WebGLRenderer({canvas: canvas});
@@ -74,7 +120,7 @@ const legDepth = legWidth;
 const legGeometry = new THREE.BoxBufferGeometry(legWidth, legHeight, legDepth);
 const legMaterial = new THREE.MeshPhongMaterial({color: legColor});
 const legs = [];
-const legYOffset = -0.5 * UNITS_PER_MM;
+const legYOffset = -2 * UNITS_PER_MM;
 for (let i = 0; i < 4; ++i) {
   const leg = new THREE.Mesh(legGeometry, legMaterial);
   legs.push(leg);
@@ -94,7 +140,7 @@ legs[3].position.z = (tableLength - sideCushionWidth) / 2;
 const groundWidth = 10 * UNITS_PER_M;
 const groundHeight = 10 * UNITS_PER_M;
 const groundColor = 'grey';
-const groundYOffset = -1.5 * UNITS_PER_MM;
+const groundYOffset = -5 * UNITS_PER_MM;
 const groundGeometry = new THREE.PlaneBufferGeometry(groundWidth, groundHeight);
 const groundMaterial =
     new THREE.MeshPhongMaterial({color: groundColor, side: THREE.DoubleSide});
@@ -104,21 +150,38 @@ ground.position.y = groundYOffset;
 scene.add(ground);
 
 // Add billiard balls
+const numberOfBalls = 8;
 const balls = [];
 const ballRadius = 57.15 * UNITS_PER_MM / 2;
+const ballDiameter = ballRadius * 2;
 const ballColor = 'blue';
-const ballGeometryWidthSegments = 8;
-const ballGeometryHeightSegments = 8;
+const ballGeometryWidthSegments = 16;
+const ballGeometryHeightSegments = 16;
 const ballGeometry =
     new THREE.SphereGeometry(
         ballRadius, ballGeometryWidthSegments, ballGeometryHeightSegments);
 const ballMaterial =
     new THREE.MeshPhongMaterial({color: ballColor, wireframe: true});
-for (let i = 0; i < 4; ++i) {
-  const ball = new THREE.Mesh(ballGeometry, ballMaterial);
-  balls.push[ball];
-  ball.position.y = table.position.y + ballRadius;
-  scene.add(ball);
+
+for (let i = 0; i < numberOfBalls; ++i) {
+  const newBall = new THREE.Mesh(ballGeometry, ballMaterial);
+  newBall.position.y = table.position.y + ballRadius;
+
+  // Place balls at random, non-overlapping positions on the table
+  let ballsAreOverlapping = false;
+  do {
+    newBall.position.x = (Math.random() - 0.5) * (tableWidth - ballDiameter);
+    newBall.position.z = (Math.random() - 0.5) * (tableLength - ballDiameter);
+    for (const ball of balls) {
+      if (areBallsOverlapping(ball, newBall, ballRadius)) {
+        ballsAreOverlapping = true;
+        break;
+      }
+    }
+  } while (ballsAreOverlapping);
+
+  balls.push(newBall);
+  scene.add(newBall);
 }
 
 // Add camera
@@ -126,7 +189,7 @@ const cameraFov = 45;
 const cameraAspect = canvas.width / canvas.height;
 const cameraNear = UNITS_PER_MM;
 const cameraFar = 10000 * UNITS_PER_MM;
-const cameraInitialPosition = [0, tableHeight * 2, tableLength];
+const cameraInitialPosition = [0, tableHeight * 6, tableLength];
 const camera =
     new THREE.PerspectiveCamera(
         cameraFov, cameraAspect, cameraNear, cameraFar);
@@ -144,7 +207,6 @@ const directionalLight = new THREE.DirectionalLight(directionalLightColor);
 directionalLight.position.set(0, tableHeight * 2, 0);
 scene.add(directionalLight);
 
-// TODO: Place balls at random, non-overlapping positions on the table
 // TODO: Move each balls according to its own random velocity vector
 // TODO: Reduce velocity of each ball by 20% per second due to friction
 // TODO: Make sure the balls are rolling without slip and not just sliding
