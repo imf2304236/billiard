@@ -218,7 +218,6 @@ directionalLight.position.set(0, tableHeight * 2, 0);
 scene.add(directionalLight);
 
 // TODO: Make sure the balls are rolling without slip and not just sliding
-// TODO: Reduce the velocity of each ball by 20% at each reflection
 // TODO: Add the texture images to the balls
 // TODO: Implement elastic collisions between the balls
 // TODO: Reduce the speed of each ball by 30 % at each of its collision.
@@ -242,18 +241,19 @@ function render() {
   deltaTime = clock.getDelta();
 
   for (const ball of balls) {
-    // Specular reflection
+    // Specular Reflection:
+    // Velocity of each ball reduced by 20% at each reflection
     if (ball.position.x + ballRadius > tableWidth / 2) {
-      ball.velocity.x = -Math.abs(ball.velocity.x);
+      ball.velocity.x = -Math.abs(ball.velocity.x) * 0.8;
     }
     if (ball.position.x - ballRadius < -tableWidth / 2) {
-      ball.velocity.x = Math.abs(ball.velocity.x);
+      ball.velocity.x = Math.abs(ball.velocity.x) * 0.8;
     }
     if (ball.position.z + ballRadius > tableLength / 2) {
-      ball.velocity.z = -Math.abs(ball.velocity.z);
+      ball.velocity.z = -Math.abs(ball.velocity.z) * 0.8;
     }
     if (ball.position.z - ballRadius < -tableLength / 2) {
-      ball.velocity.z = Math.abs(ball.velocity.z);
+      ball.velocity.z = Math.abs(ball.velocity.z) * 0.8;
     }
 
     // Reduce velocity of each ball by 20% per second due to friction
