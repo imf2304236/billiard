@@ -52,7 +52,7 @@ function areBallsOverlapping(ball1Position, ball2Position, ballRadius) {
 
 // Initialize webGL Renderer
 const canvas = document.getElementById('mycanvas');
-const renderer = new THREE.WebGLRenderer({ canvas: canvas });
+const renderer = new THREE.WebGLRenderer({canvas: canvas});
 renderer.setClearColor('rgb(255, 255, 255)');
 renderer.shadowMap.enabled = true;
 // Create scene
@@ -84,8 +84,9 @@ const sideCushionLength = tableLength + sideCushionWidth * 2;
 const cushionColor = tableColor;
 const sideCushionGeometry =
   new THREE.BoxBufferGeometry(
-    sideCushionWidth, sideCushionHeight, sideCushionLength);
-const sideCushionMaterial = new THREE.MeshPhongMaterial({ color: cushionColor });
+      sideCushionWidth, sideCushionHeight, sideCushionLength);
+const sideCushionMaterial =
+    new THREE.MeshPhongMaterial({color: cushionColor});
 const sideCushions = [
   new THREE.Mesh(sideCushionGeometry, sideCushionMaterial),
   new THREE.Mesh(sideCushionGeometry, sideCushionMaterial),
@@ -108,8 +109,8 @@ const backCushionHeight = sideCushionHeight;
 const backCushionDepth = sideCushionWidth;
 const backCushionGeometry =
   new THREE.BoxBufferGeometry(
-    backCushionWidth, backCushionHeight, backCushionDepth);
-const backCushionMaterial = new THREE.MeshPhongMaterial({ color: cushionColor });
+      backCushionWidth, backCushionHeight, backCushionDepth);
+const backCushionMaterial = new THREE.MeshPhongMaterial({color: cushionColor});
 const backCushions = [
   new THREE.Mesh(backCushionGeometry, backCushionMaterial),
   new THREE.Mesh(backCushionGeometry, backCushionMaterial),
@@ -133,7 +134,7 @@ const legWidth = sideCushionWidth * 1.5;
 const legHeight = tableHeight;
 const legDepth = legWidth;
 const legGeometry = new THREE.BoxBufferGeometry(legWidth, legHeight, legDepth);
-const legMaterial = new THREE.MeshPhongMaterial({ color: legColor });
+const legMaterial = new THREE.MeshPhongMaterial({color: legColor});
 const legs = [];
 const legYOffset = -2 * UNITS_PER_MM;
 for (let i = 0; i < 4; ++i) {
@@ -162,7 +163,7 @@ const groundColor = 'grey';
 const groundYOffset = -5 * UNITS_PER_MM;
 const groundGeometry = new THREE.BoxBufferGeometry(groundWidth, groundHeight);
 const groundMaterial =
-  new THREE.MeshPhongMaterial({ color: groundColor, side: THREE.DoubleSide });
+  new THREE.MeshPhongMaterial({color: groundColor, side: THREE.DoubleSide});
 const ground = new THREE.Mesh(groundGeometry, groundMaterial);
 ground.rotateX(-Math.PI / 2);
 ground.position.y = groundYOffset;
