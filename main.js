@@ -218,7 +218,7 @@ const cameraFov = 45;
 const cameraAspect = canvas.width / canvas.height;
 const cameraNear = 0.1;
 const cameraFar = 1000;
-const cameraInitialPosition = [0, tableHeight * 6.5, 0];
+const cameraInitialPosition = [tableWidth, tableHeight * 3, tableLength];
 const camera =
     new THREE.PerspectiveCamera(
         cameraFov, cameraAspect, cameraNear, cameraFar);
@@ -236,7 +236,20 @@ const directionalLight = new THREE.DirectionalLight(directionalLightColor);
 directionalLight.position.set(0, tableHeight * 2, 0);
 scene.add(directionalLight);
 
-// TODO: Add ceiling
+// Add ceiling
+const ceilingGeometry =
+    new THREE.PlaneBufferGeometry(
+        tableWidth * 2, tableLength * 2, tableHeight * 2);
+const ceilingMaterial =
+    new THREE.MeshPhongMaterial({
+      color: legColor,
+      side: THREE.DoubleSide,
+    });
+const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
+ceiling.rotateX(-Math.PI / 2);
+ceiling.position.set(0, tableHeight * 4, 0);
+scene.add(ceiling);
+
 // TODO: Add a spotlight above the table
 // TODO: Add lightbulb
 // TODO: Add cord
