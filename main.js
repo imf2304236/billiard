@@ -282,6 +282,14 @@ lightbulb.position.set(0, ceiling.position.y - 100, 0);
 scene.add(lightbulb);
 
 // Add cord
+const cordRadius = 1;
+const cordHeight = ceiling.position.y - lightbulb.position.y - lightbulbRadius;
+const cordGeometry =
+  new THREE.CylinderBufferGeometry(cordRadius, cordRadius, cordHeight);
+const cordMaterial = new THREE.MeshBasicMaterial({color: 'black'});
+const cord = new THREE.Mesh(cordGeometry, cordMaterial);
+cord.position.y = lightbulb.position.y + cordHeight / 2;
+scene.add(cord);
 
 // Add spotlight
 const spotlightColor = lightbulbColor;
@@ -350,8 +358,6 @@ function render() {
           const factor = dist.dot(diffU) / distSq;
           ball.velocity.sub(dist.clone().multiplyScalar(factor));
           balls[j].velocity.add(dist.clone().multiplyScalar(factor));
-          // ball.velocity.multiplyScalar(0.9);
-          // balls[j].velocity.multiplyScalar(0.9);
 
           ball.rotateAndTranslate();
           balls[j].rotateAndTranslate();
