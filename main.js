@@ -195,7 +195,7 @@ for (let i = 0; i < numberOfBalls; ++i) {
   } while (ballsAreOverlapping);
 
   // Assign a random velocity vector to each ball
-  const velocityScalar = UNITS_PER_M / 2;
+  const velocityScalar = UNITS_PER_M * 2;
   newBall.velocity =
       new THREE.Vector3(
           velocityScalar * (Math.random() - 0.5),
@@ -214,9 +214,9 @@ for (let i = 0; i < numberOfBalls; ++i) {
 // Add camera
 const cameraFov = 45;
 const cameraAspect = canvas.width / canvas.height;
-const cameraNear = UNITS_PER_MM;
-const cameraFar = 10000 * UNITS_PER_MM;
-const cameraInitialPosition = [0, tableHeight * 6, tableLength];
+const cameraNear = 0.1;
+const cameraFar = 1000;
+const cameraInitialPosition = [0, tableHeight * 6.5, 0];
 const camera =
     new THREE.PerspectiveCamera(
         cameraFov, cameraAspect, cameraNear, cameraFar);
@@ -234,7 +234,7 @@ const directionalLight = new THREE.DirectionalLight(directionalLightColor);
 directionalLight.position.set(0, tableHeight * 2, 0);
 scene.add(directionalLight);
 
-// TODO: Implement elastic collisions between the balls
+
 // TODO: Reduce the speed of each ball by 30 % at each of its collision.
 // TODO: Add ceiling
 // TODO: Add a spotlight above the table
@@ -255,7 +255,8 @@ function render() {
   requestAnimationFrame(render);
   deltaTime = clock.getDelta();
 
-  for (const ball of balls) {
+  for (let i = 0; i != balls.length; ++i) {
+    const ball = balls[i];
     // Reduce velocity of each ball by 20% per second due to friction
     ball.velocity.sub(ball.velocity.clone().multiplyScalar(0.2 * deltaTime));
 
@@ -270,13 +271,26 @@ function render() {
     ball.ax = new THREE.Vector3(0, 1, 0).cross(ball.velocity).normalize();
     ball.omega = ball.velocity.length() / ballRadius;
 
-    // multiply with dR form the left
+    // multiply with dR from the left
     // (matrix.multiply multiplies from the right!)
-    ball.dR.makeRotationAxis(ball.ax, ball.omega * 0.8 * deltaTime);
+    ball.dR.makeRotationAxis(ball.ax, ball.omega * (0.8 * deltaTime));
 
     ball.matrix.premultiply(ball.dR);
     // set translational part of matrix to current position:
     ball.matrix.setPosition(ball.currentPosition);
+
+    // Elastic Collisions:
+    for (let j = i + 1; j != balls.length; ++j) {
+      const dist = ball.currentPosition.clone();
+      dist.sub(balls[j].currentPosition);
+      const distSq = dist.lengthSq();
+      if (distSq < 4 * (ballRadius * ballRadius)) {
+        const diffU = ball.velocity.clone().sub(balls[j].velocity);
+        const factor = dist.dot(diffU) / distSq;
+        ball.velocity.sub(dist.clone().multiplyScalar(factor));
+        balls[j].velocity.add(dist.clone().multiplyScalar(factor));
+      }
+    }
 
     // Specular Reflection:
     // Velocity of each ball reduced by 20% at each reflection
