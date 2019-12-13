@@ -57,7 +57,6 @@ renderer.setClearColor('rgb(255, 255, 255)');
 
 // Create scene
 const scene = new THREE.Scene();
-scene.add(new THREE.AxesHelper());
 
 // Create table
 const tableLength = 2700 * UNITS_PER_MM;
@@ -154,6 +153,7 @@ scene.add(ground);
 const numberOfBalls = 8;
 const balls = [];
 const ballRadius = 57.15 * UNITS_PER_MM / 2;
+const ballRadiusSquared = ballRadius * ballRadius;
 const ballDiameter = ballRadius * 2;
 const ballColor = 'white';
 const ballGeometryWidthSegments = 16;
@@ -207,6 +207,8 @@ for (let i = 0; i < numberOfBalls; ++i) {
   newBall.ax = new THREE.Vector3(0, 1, 0).cross(newBall.velocity).normalize();
   newBall.omega = newBall.velocity.length() / ballRadius;
 
+  newBall.clock = new THREE.Clock();
+
   balls.push(newBall);
   scene.add(newBall);
 }
@@ -234,8 +236,6 @@ const directionalLight = new THREE.DirectionalLight(directionalLightColor);
 directionalLight.position.set(0, tableHeight * 2, 0);
 scene.add(directionalLight);
 
-
-// TODO: Reduce the speed of each ball by 30 % at each of its collision.
 // TODO: Add ceiling
 // TODO: Add a spotlight above the table
 // TODO: Add lightbulb
@@ -245,50 +245,67 @@ scene.add(directionalLight);
 
 const controls = new THREE.TrackballControls(camera, canvas);
 
-const clock = new THREE.Clock();
-let deltaTime = 0;
+/**
+ * Rotates & translates
+ */
+THREE.Mesh.prototype.rotateAndTranslate = function() {
+  this.deltaTime = this.clock.getDelta();
+
+  // Reduce velocity of each ball by 20% per second due to friction
+  this.velocity.sub(this.velocity.clone().multiplyScalar(0.2 * this.deltaTime));
+
+  // Move each ball according to its velocity vector
+  this.deltaPosition = this.velocity.clone().multiplyScalar(this.deltaTime);
+  this.currentPosition.add(this.deltaPosition);
+
+  // dR: incremental rotation matrix that performs
+  // the rotation of the current time step.
+  this.dR = new THREE.Matrix4();
+
+  this.ax = new THREE.Vector3(0, 1, 0).cross(this.velocity).normalize();
+  this.omega = this.velocity.length() / ballRadius;
+
+  // multiply with dR from the left
+  // (matrix.multiply multiplies from the right!)
+  this.dR.makeRotationAxis(this.ax, this.omega * (0.8 * this.deltaTime));
+
+  this.matrix.premultiply(this.dR);
+  // set translational part of matrix to current position:
+  this.matrix.setPosition(this.currentPosition);
+};
 
 /**
  * Renders frame
  */
 function render() {
   requestAnimationFrame(render);
-  deltaTime = clock.getDelta();
+
+  for (const ball of balls) {
+    ball.collided = false;
+  }
 
   for (let i = 0; i != balls.length; ++i) {
     const ball = balls[i];
-    // Reduce velocity of each ball by 20% per second due to friction
-    ball.velocity.sub(ball.velocity.clone().multiplyScalar(0.2 * deltaTime));
-
-    // Move each ball according to its velocity vector
-    ball.deltaPosition = ball.velocity.clone().multiplyScalar(deltaTime);
-    ball.currentPosition.add(ball.deltaPosition);
-
-    // dR: incremental rotation matrix that performs
-    // the rotation of the current time step.
-    ball.dR = new THREE.Matrix4();
-
-    ball.ax = new THREE.Vector3(0, 1, 0).cross(ball.velocity).normalize();
-    ball.omega = ball.velocity.length() / ballRadius;
-
-    // multiply with dR from the left
-    // (matrix.multiply multiplies from the right!)
-    ball.dR.makeRotationAxis(ball.ax, ball.omega * (0.8 * deltaTime));
-
-    ball.matrix.premultiply(ball.dR);
-    // set translational part of matrix to current position:
-    ball.matrix.setPosition(ball.currentPosition);
 
     // Elastic Collisions:
     for (let j = i + 1; j != balls.length; ++j) {
-      const dist = ball.currentPosition.clone();
-      dist.sub(balls[j].currentPosition);
-      const distSq = dist.lengthSq();
-      if (distSq < 4 * (ballRadius * ballRadius)) {
-        const diffU = ball.velocity.clone().sub(balls[j].velocity);
-        const factor = dist.dot(diffU) / distSq;
-        ball.velocity.sub(dist.clone().multiplyScalar(factor));
-        balls[j].velocity.add(dist.clone().multiplyScalar(factor));
+      if (!ball.collided && !balls[j].collided) {
+        const dist = ball.currentPosition.clone();
+        dist.sub(balls[j].currentPosition);
+        const distSq = dist.lengthSq();
+        if (distSq <= 4 * ballRadiusSquared) {
+          ball.collided = true;
+          balls[j].collided = true;
+          const diffU = ball.velocity.clone().sub(balls[j].velocity);
+          const factor = dist.dot(diffU) / distSq;
+          ball.velocity.sub(dist.clone().multiplyScalar(factor));
+          balls[j].velocity.add(dist.clone().multiplyScalar(factor));
+          // ball.velocity.multiplyScalar(0.9);
+          // balls[j].velocity.multiplyScalar(0.9);
+
+          ball.rotateAndTranslate();
+          balls[j].rotateAndTranslate();
+        }
       }
     }
 
@@ -306,6 +323,8 @@ function render() {
     if (ball.currentPosition.z - ballRadius < -tableLength / 2) {
       ball.velocity.z = Math.abs(ball.velocity.z) * 0.8;
     }
+
+    ball.rotateAndTranslate();
   }
 
   controls.update();
