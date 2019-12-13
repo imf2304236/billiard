@@ -17,23 +17,23 @@ function inRange(number, lowerBound, upperBound) {
 
 /**
  * Checks if two balls are overlapping
- * @param {THREE.Object3D} ball1
- * @param {THREE.Object3D} ball2
+ * @param {THREE.Vector3} ball1Position
+ * @param {THREE.Vector3} ball2Position
  * @param {Number} ballRadius
  * @return {Boolean} `true` if balls are overlapping, otherwise `false`
  */
-function areBallsOverlapping(ball1, ball2, ballRadius) {
+function areBallsOverlapping(ball1Position, ball2Position, ballRadius) {
   let result = false;
 
-  const ball1LowerBoundX = ball1.position.x - ballRadius;
-  const ball1UpperBoundX = ball1.position.x + ballRadius;
-  const ball1LowerBoundZ = ball1.position.z - ballRadius;
-  const ball1UpperBoundZ = ball1.position.z + ballRadius;
+  const ball1LowerBoundX = ball1Position.x - ballRadius;
+  const ball1UpperBoundX = ball1Position.x + ballRadius;
+  const ball1LowerBoundZ = ball1Position.z - ballRadius;
+  const ball1UpperBoundZ = ball1Position.z + ballRadius;
 
-  const ball2LowerBoundX = ball2.position.x - ballRadius;
-  const ball2UpperBoundX = ball2.position.x + ballRadius;
-  const ball2LowerBoundZ = ball2.position.z - ballRadius;
-  const ball2UpperBoundZ = ball2.position.z + ballRadius;
+  const ball2LowerBoundX = ball2Position.x - ballRadius;
+  const ball2UpperBoundX = ball2Position.x + ballRadius;
+  const ball2LowerBoundZ = ball2Position.z - ballRadius;
+  const ball2UpperBoundZ = ball2Position.z + ballRadius;
 
   if (
     (
@@ -170,16 +170,24 @@ for (let i = 0; i < numberOfBalls; ++i) {
   image.onloadend = () => texture.needsUpdate = true;
   const ballMaterial =
     new THREE.MeshPhongMaterial({color: ballColor, map: texture});
+    // new THREE.MeshPhongMaterial({color: ballColor, wireframe: true});
   const newBall = new THREE.Mesh(ballGeometry, ballMaterial);
+  newBall.matrixAutoUpdate = false;
 
   // Place balls at random, non-overlapping positions on the table
-  newBall.position.y = table.position.y + ballRadius;
   let ballsAreOverlapping = false;
   do {
-    newBall.position.x = (Math.random() - 0.5) * (tableWidth - ballDiameter);
-    newBall.position.z = (Math.random() - 0.5) * (tableLength - ballDiameter);
+    newBall.currentPosition =
+        new THREE.Vector3(
+            (Math.random() - 0.5) * (tableWidth - ballDiameter),
+            table.position.y + ballRadius,
+            (Math.random() - 0.5) * (tableLength - ballDiameter),
+        );
     for (const ball of balls) {
-      if (areBallsOverlapping(ball, newBall, ballRadius)) {
+      if (
+        areBallsOverlapping(
+            ball.currentPosition, newBall.currentPosition, ballRadius)
+      ) {
         ballsAreOverlapping = true;
         break;
       }
@@ -187,13 +195,17 @@ for (let i = 0; i < numberOfBalls; ++i) {
   } while (ballsAreOverlapping);
 
   // Assign a random velocity vector to each ball
-  const velocityScalar = UNITS_PER_M / 10;
+  const velocityScalar = UNITS_PER_M / 2;
   newBall.velocity =
       new THREE.Vector3(
           velocityScalar * (Math.random() - 0.5),
           0,
           velocityScalar * (Math.random() - 0.5),
       );
+
+  // axis and angular velocity of rotational motion
+  newBall.ax = new THREE.Vector3(0, 1, 0).cross(newBall.velocity).normalize();
+  newBall.omega = newBall.velocity.length() / ballRadius;
 
   balls.push(newBall);
   scene.add(newBall);
@@ -222,7 +234,6 @@ const directionalLight = new THREE.DirectionalLight(directionalLightColor);
 directionalLight.position.set(0, tableHeight * 2, 0);
 scene.add(directionalLight);
 
-// TODO: Make sure the balls are rolling without slip and not just sliding
 // TODO: Implement elastic collisions between the balls
 // TODO: Reduce the speed of each ball by 30 % at each of its collision.
 // TODO: Add ceiling
@@ -245,26 +256,42 @@ function render() {
   deltaTime = clock.getDelta();
 
   for (const ball of balls) {
-    // Specular Reflection:
-    // Velocity of each ball reduced by 20% at each reflection
-    if (ball.position.x + ballRadius > tableWidth / 2) {
-      ball.velocity.x = -Math.abs(ball.velocity.x) * 0.8;
-    }
-    if (ball.position.x - ballRadius < -tableWidth / 2) {
-      ball.velocity.x = Math.abs(ball.velocity.x) * 0.8;
-    }
-    if (ball.position.z + ballRadius > tableLength / 2) {
-      ball.velocity.z = -Math.abs(ball.velocity.z) * 0.8;
-    }
-    if (ball.position.z - ballRadius < -tableLength / 2) {
-      ball.velocity.z = Math.abs(ball.velocity.z) * 0.8;
-    }
-
     // Reduce velocity of each ball by 20% per second due to friction
     ball.velocity.sub(ball.velocity.clone().multiplyScalar(0.2 * deltaTime));
 
     // Move each ball according to its velocity vector
-    ball.position.add(ball.velocity);
+    ball.deltaPosition = ball.velocity.clone().multiplyScalar(deltaTime);
+    ball.currentPosition.add(ball.deltaPosition);
+
+    // dR: incremental rotation matrix that performs
+    // the rotation of the current time step.
+    ball.dR = new THREE.Matrix4();
+
+    ball.ax = new THREE.Vector3(0, 1, 0).cross(ball.velocity).normalize();
+    ball.omega = ball.velocity.length() / ballRadius;
+
+    // multiply with dR form the left
+    // (matrix.multiply multiplies from the right!)
+    ball.dR.makeRotationAxis(ball.ax, ball.omega * 0.8 * deltaTime);
+
+    ball.matrix.premultiply(ball.dR);
+    // set translational part of matrix to current position:
+    ball.matrix.setPosition(ball.currentPosition);
+
+    // Specular Reflection:
+    // Velocity of each ball reduced by 20% at each reflection
+    if (ball.currentPosition.x + ballRadius > tableWidth / 2) {
+      ball.velocity.x = -Math.abs(ball.velocity.x) * 0.8;
+    }
+    if (ball.currentPosition.x - ballRadius < -tableWidth / 2) {
+      ball.velocity.x = Math.abs(ball.velocity.x) * 0.8;
+    }
+    if (ball.currentPosition.z + ballRadius > tableLength / 2) {
+      ball.velocity.z = -Math.abs(ball.velocity.z) * 0.8;
+    }
+    if (ball.currentPosition.z - ballRadius < -tableLength / 2) {
+      ball.velocity.z = Math.abs(ball.velocity.z) * 0.8;
+    }
   }
 
   controls.update();
