@@ -155,20 +155,25 @@ const numberOfBalls = 8;
 const balls = [];
 const ballRadius = 57.15 * UNITS_PER_MM / 2;
 const ballDiameter = ballRadius * 2;
-const ballColor = 'blue';
+const ballColor = 'white';
 const ballGeometryWidthSegments = 16;
 const ballGeometryHeightSegments = 16;
 const ballGeometry =
     new THREE.SphereGeometry(
         ballRadius, ballGeometryWidthSegments, ballGeometryHeightSegments);
-const ballMaterial =
-    new THREE.MeshPhongMaterial({color: ballColor, wireframe: true});
 
 for (let i = 0; i < numberOfBalls; ++i) {
+  // Add the texture images to the balls
+  const image = new Image();
+  image.src = imgBase64Array[i];
+  const texture = new THREE.Texture(image);
+  image.onloadend = () => texture.needsUpdate = true;
+  const ballMaterial =
+    new THREE.MeshPhongMaterial({color: ballColor, map: texture});
   const newBall = new THREE.Mesh(ballGeometry, ballMaterial);
-  newBall.position.y = table.position.y + ballRadius;
 
   // Place balls at random, non-overlapping positions on the table
+  newBall.position.y = table.position.y + ballRadius;
   let ballsAreOverlapping = false;
   do {
     newBall.position.x = (Math.random() - 0.5) * (tableWidth - ballDiameter);
@@ -218,7 +223,6 @@ directionalLight.position.set(0, tableHeight * 2, 0);
 scene.add(directionalLight);
 
 // TODO: Make sure the balls are rolling without slip and not just sliding
-// TODO: Add the texture images to the balls
 // TODO: Implement elastic collisions between the balls
 // TODO: Reduce the speed of each ball by 30 % at each of its collision.
 // TODO: Add ceiling
