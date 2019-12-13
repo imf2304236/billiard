@@ -38,10 +38,10 @@ function areBallsOverlapping(ball1Position, ball2Position, ballRadius) {
   if (
     (
       inRange(ball1LowerBoundX, ball2LowerBoundX, ball2UpperBoundX) ||
-          inRange(ball1UpperBoundX, ball2LowerBoundX, ball2UpperBoundX)
+      inRange(ball1UpperBoundX, ball2LowerBoundX, ball2UpperBoundX)
     ) && (
       inRange(ball1LowerBoundZ, ball2LowerBoundZ, ball2UpperBoundZ) ||
-          inRange(ball1UpperBoundZ, ball2LowerBoundZ, ball2UpperBoundZ)
+      inRange(ball1UpperBoundZ, ball2LowerBoundZ, ball2UpperBoundZ)
     )
   ) {
     result = true;
@@ -52,9 +52,9 @@ function areBallsOverlapping(ball1Position, ball2Position, ballRadius) {
 
 // Initialize webGL Renderer
 const canvas = document.getElementById('mycanvas');
-const renderer = new THREE.WebGLRenderer({canvas: canvas});
+const renderer = new THREE.WebGLRenderer({ canvas: canvas });
 renderer.setClearColor('rgb(255, 255, 255)');
-
+renderer.shadowMap.enabled = true;
 // Create scene
 const scene = new THREE.Scene();
 
@@ -63,15 +63,18 @@ const tableLength = 2700 * UNITS_PER_MM;
 const tableWidth = tableLength / 2;
 const tableHeight = 775 * UNITS_PER_MM;
 const tableColor = 'darkgreen';
-const tableGeometry = new THREE.PlaneBufferGeometry(tableWidth, tableLength);
+const tableGeometry = new THREE.BoxGeometry(tableWidth, tableLength, 1);
 const tableMaterial =
-    new THREE.MeshPhongMaterial({
-      color: tableColor,
-      side: THREE.DoubleSide,
-    });
+  new THREE.MeshPhongMaterial({
+    color: tableColor,
+  });
 const table = new THREE.Mesh(tableGeometry, tableMaterial);
 table.rotateX(-Math.PI / 2);
 table.position.y = tableHeight;
+
+table.castShadow = true;
+table.receiveShadow = true;
+
 scene.add(table);
 
 // Create cushions
@@ -80,9 +83,9 @@ const sideCushionHeight = sideCushionWidth;
 const sideCushionLength = tableLength + sideCushionWidth * 2;
 const cushionColor = tableColor;
 const sideCushionGeometry =
-    new THREE.BoxBufferGeometry(
-        sideCushionWidth, sideCushionHeight, sideCushionLength);
-const sideCushionMaterial = new THREE.MeshPhongMaterial({color: cushionColor});
+  new THREE.BoxBufferGeometry(
+    sideCushionWidth, sideCushionHeight, sideCushionLength);
+const sideCushionMaterial = new THREE.MeshPhongMaterial({ color: cushionColor });
 const sideCushions = [
   new THREE.Mesh(sideCushionGeometry, sideCushionMaterial),
   new THREE.Mesh(sideCushionGeometry, sideCushionMaterial),
@@ -91,6 +94,12 @@ sideCushions[0].position.x = -(tableWidth / 2 + sideCushionWidth / 2);
 sideCushions[1].position.x = tableWidth / 2 + sideCushionWidth / 2;
 sideCushions[0].position.y = tableHeight + sideCushionHeight / 2;
 sideCushions[1].position.y = tableHeight + sideCushionHeight / 2;
+
+sideCushions[0].castShadow = true;
+sideCushions[0].receiveShadow = true;
+sideCushions[1].castShadow = true;
+sideCushions[1].receiveShadow = true;
+
 scene.add(sideCushions[0]);
 scene.add(sideCushions[1]);
 
@@ -98,9 +107,9 @@ const backCushionWidth = tableWidth + 2 * sideCushionWidth;
 const backCushionHeight = sideCushionHeight;
 const backCushionDepth = sideCushionWidth;
 const backCushionGeometry =
-    new THREE.BoxBufferGeometry(
-        backCushionWidth, backCushionHeight, backCushionDepth);
-const backCushionMaterial = new THREE.MeshPhongMaterial({color: cushionColor});
+  new THREE.BoxBufferGeometry(
+    backCushionWidth, backCushionHeight, backCushionDepth);
+const backCushionMaterial = new THREE.MeshPhongMaterial({ color: cushionColor });
 const backCushions = [
   new THREE.Mesh(backCushionGeometry, backCushionMaterial),
   new THREE.Mesh(backCushionGeometry, backCushionMaterial),
@@ -109,6 +118,12 @@ backCushions[0].position.y = sideCushions[0].position.y;
 backCushions[1].position.y = sideCushions[0].position.y;
 backCushions[0].position.z = -tableLength / 2 - sideCushionWidth / 2;
 backCushions[1].position.z = tableLength / 2 + sideCushionWidth / 2;
+
+backCushions[0].castShadow = true;
+backCushions[0].receiveShadow = true;
+backCushions[1].castShadow = true;
+backCushions[1].receiveShadow = true;
+
 scene.add(backCushions[0]);
 scene.add(backCushions[1]);
 
@@ -118,13 +133,17 @@ const legWidth = sideCushionWidth * 1.5;
 const legHeight = tableHeight;
 const legDepth = legWidth;
 const legGeometry = new THREE.BoxBufferGeometry(legWidth, legHeight, legDepth);
-const legMaterial = new THREE.MeshPhongMaterial({color: legColor});
+const legMaterial = new THREE.MeshPhongMaterial({ color: legColor });
 const legs = [];
 const legYOffset = -2 * UNITS_PER_MM;
 for (let i = 0; i < 4; ++i) {
   const leg = new THREE.Mesh(legGeometry, legMaterial);
   legs.push(leg);
   leg.position.y = legHeight / 2 + legYOffset;
+
+  legs[i].castShadow = true;
+  legs[i].receiveShadow = true;
+
   scene.add(leg);
 }
 legs[0].position.x = -(tableWidth - sideCushionWidth) / 2;
@@ -143,10 +162,13 @@ const groundColor = 'grey';
 const groundYOffset = -5 * UNITS_PER_MM;
 const groundGeometry = new THREE.PlaneBufferGeometry(groundWidth, groundHeight);
 const groundMaterial =
-    new THREE.MeshPhongMaterial({color: groundColor, side: THREE.DoubleSide});
+  new THREE.MeshPhongMaterial({ color: groundColor, side: THREE.DoubleSide });
 const ground = new THREE.Mesh(groundGeometry, groundMaterial);
 ground.rotateX(-Math.PI / 2);
 ground.position.y = groundYOffset;
+
+ground.receiveShadow = true;
+
 scene.add(ground);
 
 // Add billiard balls
@@ -156,11 +178,11 @@ const ballRadius = 57.15 * UNITS_PER_MM / 2;
 const ballRadiusSquared = ballRadius * ballRadius;
 const ballDiameter = ballRadius * 2;
 const ballColor = 'white';
-const ballGeometryWidthSegments = 16;
-const ballGeometryHeightSegments = 16;
+const ballGeometryWidthSegments = 64;
+const ballGeometryHeightSegments = 64;
 const ballGeometry =
-    new THREE.SphereGeometry(
-        ballRadius, ballGeometryWidthSegments, ballGeometryHeightSegments);
+  new THREE.SphereGeometry(
+    ballRadius, ballGeometryWidthSegments, ballGeometryHeightSegments);
 
 for (let i = 0; i < numberOfBalls; ++i) {
   // Add the texture images to the balls
@@ -169,8 +191,8 @@ for (let i = 0; i < numberOfBalls; ++i) {
   const texture = new THREE.Texture(image);
   image.onloadend = () => texture.needsUpdate = true;
   const ballMaterial =
-    new THREE.MeshPhongMaterial({color: ballColor, map: texture});
-    // new THREE.MeshPhongMaterial({color: ballColor, wireframe: true});
+    new THREE.MeshPhongMaterial({ color: ballColor, map: texture });
+  // new THREE.MeshPhongMaterial({color: ballColor, wireframe: true});
   const newBall = new THREE.Mesh(ballGeometry, ballMaterial);
   newBall.matrixAutoUpdate = false;
 
@@ -178,15 +200,15 @@ for (let i = 0; i < numberOfBalls; ++i) {
   let ballsAreOverlapping = false;
   do {
     newBall.currentPosition =
-        new THREE.Vector3(
-            (Math.random() - 0.5) * (tableWidth - ballDiameter),
-            table.position.y + ballRadius,
-            (Math.random() - 0.5) * (tableLength - ballDiameter),
-        );
+      new THREE.Vector3(
+        (Math.random() - 0.5) * (tableWidth - ballDiameter),
+        table.position.y + ballRadius,
+        (Math.random() - 0.5) * (tableLength - ballDiameter),
+      );
     for (const ball of balls) {
       if (
         areBallsOverlapping(
-            ball.currentPosition, newBall.currentPosition, ballRadius)
+          ball.currentPosition, newBall.currentPosition, ballRadius)
       ) {
         ballsAreOverlapping = true;
         break;
@@ -197,11 +219,11 @@ for (let i = 0; i < numberOfBalls; ++i) {
   // Assign a random velocity vector to each ball
   const velocityScalar = UNITS_PER_M * 2;
   newBall.velocity =
-      new THREE.Vector3(
-          velocityScalar * (Math.random() - 0.5),
-          0,
-          velocityScalar * (Math.random() - 0.5),
-      );
+    new THREE.Vector3(
+      velocityScalar * (Math.random() - 0.5),
+      0,
+      velocityScalar * (Math.random() - 0.5),
+    );
 
   // axis and angular velocity of rotational motion
   newBall.ax = new THREE.Vector3(0, 1, 0).cross(newBall.velocity).normalize();
@@ -220,48 +242,52 @@ const cameraNear = 0.1;
 const cameraFar = 1000;
 const cameraInitialPosition = [tableWidth, tableHeight * 3, tableLength];
 const camera =
-    new THREE.PerspectiveCamera(
-        cameraFov, cameraAspect, cameraNear, cameraFar);
+  new THREE.PerspectiveCamera(
+    cameraFov, cameraAspect, cameraNear, cameraFar);
 camera.position.set(...cameraInitialPosition);
 camera.lookAt(scene.position);
 
 // Add ambient light
 const ambientLightColor = 0x606060;
 const ambientLight = new THREE.AmbientLight(ambientLightColor);
+// ambientLight.castShadow = true;
 scene.add(ambientLight);
-
-// Add directional light
-const directionalLightColor = 'white';
-const directionalLight = new THREE.DirectionalLight(directionalLightColor);
-directionalLight.position.set(0, tableHeight * 2, 0);
-scene.add(directionalLight);
 
 // Add ceiling
 const ceilingGeometry =
-    new THREE.PlaneBufferGeometry(
-        tableWidth * 2, tableLength * 2, tableHeight * 2);
+  new THREE.PlaneBufferGeometry(
+    tableWidth * 2, tableLength * 2, tableHeight * 2);
 const ceilingMaterial =
-    new THREE.MeshPhongMaterial({
-      color: legColor,
-      side: THREE.DoubleSide,
-    });
+  new THREE.MeshPhongMaterial({
+    color: legColor,
+    side: THREE.DoubleSide,
+  });
 const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
 ceiling.rotateX(-Math.PI / 2);
 ceiling.position.set(0, tableHeight * 4, 0);
 scene.add(ceiling);
 
-// TODO: Add a spotlight above the table
+// Add spotlight
+const spotLightColor = "white";
+const spotLight = new THREE.SpotLight(spotLightColor);
+spotLight.position.set(0, ceiling.position.y - 10 / 2, 0);
+
+spotLight.castShadow = true;
+
+spotLight.shadowMapWidth = 4092; // default is 512
+spotLight.shadowMapHeight = 4092; // default is 512
+
+scene.add(spotLight);
+
 // TODO: Add lightbulb
 // TODO: Add cord
-// TODO: Add shadow to table
-// TODO: Add shadows to balls
 
 const controls = new THREE.TrackballControls(camera, canvas);
 
 /**
  * Rotates & translates
  */
-THREE.Mesh.prototype.rotateAndTranslate = function() {
+THREE.Mesh.prototype.rotateAndTranslate = function () {
   this.deltaTime = this.clock.getDelta();
 
   // Reduce velocity of each ball by 20% per second due to friction
@@ -321,6 +347,11 @@ function render() {
         }
       }
     }
+
+    balls.forEach(ball => {
+      ball.castShadow = true;
+      ball.receiveShadow = true;
+    });
 
     // Specular Reflection:
     // Velocity of each ball reduced by 20% at each reflection
