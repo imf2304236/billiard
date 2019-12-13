@@ -160,7 +160,7 @@ const groundWidth = 10 * UNITS_PER_M;
 const groundHeight = 10 * UNITS_PER_M;
 const groundColor = 'grey';
 const groundYOffset = -5 * UNITS_PER_MM;
-const groundGeometry = new THREE.PlaneBufferGeometry(groundWidth, groundHeight);
+const groundGeometry = new THREE.BoxBufferGeometry(groundWidth, groundHeight);
 const groundMaterial =
   new THREE.MeshPhongMaterial({ color: groundColor, side: THREE.DoubleSide });
 const ground = new THREE.Mesh(groundGeometry, groundMaterial);
@@ -182,7 +182,7 @@ const ballGeometryWidthSegments = 64;
 const ballGeometryHeightSegments = 64;
 const ballGeometry =
   new THREE.SphereGeometry(
-    ballRadius, ballGeometryWidthSegments, ballGeometryHeightSegments);
+      ballRadius, ballGeometryWidthSegments, ballGeometryHeightSegments);
 
 for (let i = 0; i < numberOfBalls; ++i) {
   // Add the texture images to the balls
@@ -191,9 +191,12 @@ for (let i = 0; i < numberOfBalls; ++i) {
   const texture = new THREE.Texture(image);
   image.onloadend = () => texture.needsUpdate = true;
   const ballMaterial =
-    new THREE.MeshPhongMaterial({ color: ballColor, map: texture });
-  // new THREE.MeshPhongMaterial({color: ballColor, wireframe: true});
+    new THREE.MeshPhongMaterial({color: ballColor, map: texture});
   const newBall = new THREE.Mesh(ballGeometry, ballMaterial);
+
+  newBall.castShadow = true;
+  newBall.receiveShadow = true;
+
   newBall.matrixAutoUpdate = false;
 
   // Place balls at random, non-overlapping positions on the table
@@ -201,14 +204,14 @@ for (let i = 0; i < numberOfBalls; ++i) {
   do {
     newBall.currentPosition =
       new THREE.Vector3(
-        (Math.random() - 0.5) * (tableWidth - ballDiameter),
-        table.position.y + ballRadius,
-        (Math.random() - 0.5) * (tableLength - ballDiameter),
+          (Math.random() - 0.5) * (tableWidth - ballDiameter),
+          table.position.y + ballRadius,
+          (Math.random() - 0.5) * (tableLength - ballDiameter),
       );
     for (const ball of balls) {
       if (
         areBallsOverlapping(
-          ball.currentPosition, newBall.currentPosition, ballRadius)
+            ball.currentPosition, newBall.currentPosition, ballRadius)
       ) {
         ballsAreOverlapping = true;
         break;
@@ -220,9 +223,9 @@ for (let i = 0; i < numberOfBalls; ++i) {
   const velocityScalar = UNITS_PER_M * 2;
   newBall.velocity =
     new THREE.Vector3(
-      velocityScalar * (Math.random() - 0.5),
-      0,
-      velocityScalar * (Math.random() - 0.5),
+        velocityScalar * (Math.random() - 0.5),
+        0,
+        velocityScalar * (Math.random() - 0.5),
     );
 
   // axis and angular velocity of rotational motion
@@ -243,7 +246,7 @@ const cameraFar = 1000;
 const cameraInitialPosition = [tableWidth, tableHeight * 3, tableLength];
 const camera =
   new THREE.PerspectiveCamera(
-    cameraFov, cameraAspect, cameraNear, cameraFar);
+      cameraFov, cameraAspect, cameraNear, cameraFar);
 camera.position.set(...cameraInitialPosition);
 camera.lookAt(scene.position);
 
@@ -256,7 +259,7 @@ scene.add(ambientLight);
 // Add ceiling
 const ceilingGeometry =
   new THREE.PlaneBufferGeometry(
-    tableWidth * 2, tableLength * 2, tableHeight * 2);
+      tableWidth * 2, tableLength * 2, tableHeight * 2);
 const ceilingMaterial =
   new THREE.MeshPhongMaterial({
     color: legColor,
@@ -264,30 +267,44 @@ const ceilingMaterial =
   });
 const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
 ceiling.rotateX(-Math.PI / 2);
-ceiling.position.set(0, tableHeight * 4, 0);
+ceiling.position.set(0, tableHeight * 5, 0);
 scene.add(ceiling);
 
+// Add lightbulb
+const lightbulbColor = 'white';
+const lightbulbRadius = 100 * UNITS_PER_MM;
+const lightbulbGeometry =
+    new THREE.SphereBufferGeometry(
+        lightbulbRadius, ballGeometryWidthSegments, ballGeometryHeightSegments);
+const lightbulbMaterial = new THREE.MeshPhongMaterial({color: lightbulbColor});
+const lightbulb = new THREE.Mesh(lightbulbGeometry, lightbulbMaterial);
+lightbulb.position.set(0, ceiling.position.y - 100, 0);
+scene.add(lightbulb);
+
+// Add cord
+
 // Add spotlight
-const spotLightColor = "white";
-const spotLight = new THREE.SpotLight(spotLightColor);
-spotLight.position.set(0, ceiling.position.y - 10 / 2, 0);
+const spotlightColor = lightbulbColor;
+const spotlight = new THREE.SpotLight(spotlightColor);
+spotlight.position.set(1, 200, 10);
+spotlight.castShadow = true;
 
-spotLight.castShadow = true;
+scene.add(spotlight);
+scene.add(spotlight.target);
+spotlight.target = table;
 
-spotLight.shadowMapWidth = 4092; // default is 512
-spotLight.shadowMapHeight = 4092; // default is 512
-
-scene.add(spotLight);
-
-// TODO: Add lightbulb
-// TODO: Add cord
+// Set up shadow properties for the light
+spotlight.shadow.mapSize.width = 4092;
+spotlight.shadow.mapSize.height = 4092;
+spotlight.shadow.camera.near = 0.5;
+spotlight.shadow.camera.far = 500;
 
 const controls = new THREE.TrackballControls(camera, canvas);
 
 /**
  * Rotates & translates
  */
-THREE.Mesh.prototype.rotateAndTranslate = function () {
+THREE.Mesh.prototype.rotateAndTranslate = function() {
   this.deltaTime = this.clock.getDelta();
 
   // Reduce velocity of each ball by 20% per second due to friction
@@ -319,10 +336,6 @@ THREE.Mesh.prototype.rotateAndTranslate = function () {
 function render() {
   requestAnimationFrame(render);
 
-  for (const ball of balls) {
-    ball.collided = false;
-  }
-
   for (let i = 0; i != balls.length; ++i) {
     const ball = balls[i];
 
@@ -333,8 +346,6 @@ function render() {
         dist.sub(balls[j].currentPosition);
         const distSq = dist.lengthSq();
         if (distSq <= 4 * ballRadiusSquared) {
-          ball.collided = true;
-          balls[j].collided = true;
           const diffU = ball.velocity.clone().sub(balls[j].velocity);
           const factor = dist.dot(diffU) / distSq;
           ball.velocity.sub(dist.clone().multiplyScalar(factor));
@@ -348,7 +359,7 @@ function render() {
       }
     }
 
-    balls.forEach(ball => {
+    balls.forEach((ball) => {
       ball.castShadow = true;
       ball.receiveShadow = true;
     });
